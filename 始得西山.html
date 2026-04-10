@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>西山築居記 - 水墨山水版</title>
+    <style>
+        /* 新增：整體網頁背景，使用古風水墨畫 */
+        body { 
+            font-family: "Microsoft JhengHei", "PingFang HK", sans-serif; 
+            /* 這裡使用一張公開的、適合做背景的古風水墨山水畫圖片 */
+            background-image: url('https://img.api.moemoe.moe/ink_landscape.jpg'); 
+            background-size: cover; 
+            background-position: center; 
+            background-attachment: fixed; /* 固定背景，不隨捲動軸滾動 */
+            display: flex; 
+            justify-content: center; 
+            align-items: center; /* 垂直居中 */
+            min-height: 100vh; /* 確保背景鋪滿全屏 */
+            margin: 0; 
+            padding: 20px; 
+            box-sizing: border-box;
+        }
+
+        /* 修改：遊戲主體區域改為半透明，並增加陰影 */
+        #game-container { 
+            background: rgba(255, 255, 255, 0.9); /* 半透明白色背景，透出水墨畫 */
+            width: 800px; 
+            padding: 30px; 
+            border-radius: 20px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3); /* 更深的陰影，增加立體感 */
+            border: 3px solid #6d4c41; 
+            position: relative; /* 確保內容在背景之上 */
+            z-index: 1;
+        }
+        
+        /* 房屋視覺區域（保持原有邏輯） */
+        #house-display { 
+            height: 250px; width: 100%; 
+            background: linear-gradient(to bottom, rgba(187, 222, 251, 0.7), rgba(255, 255, 255, 0.8)); /* 半透明天空 */
+            border-radius: 15px; margin-bottom: 20px; display: flex; justify-content: center; 
+            align-items: flex-end; position: relative; overflow: hidden; border: 2px solid #90caf9;
+        }
+        .house-part { position: absolute; transition: all 0.5s ease; opacity: 0; transform: scale(0.8) translateY(20px); }
+        .show { opacity: 1; transform: scale(1) translateY(0); }
+        .collapse { transform: translateY(200px) rotate(45deg) !important; opacity: 0 !important; }
+
+        /* 20 個零件的樣式（保持不變） */
+        .p1 { width: 240px; height: 10px; background: #8d6e63; bottom: 10px; z-index: 1; }
+        .p2 { width: 220px; height: 10px; background: #5d4037; bottom: 20px; z-index: 2; }
+        .p3 { width: 10px; height: 100px; background: #3e2723; bottom: 30px; left: calc(50% - 90px); z-index: 3; }
+        .p4 { width: 10px; height: 100px; background: #3e2723; bottom: 30px; right: calc(50% - 90px); z-index: 3; }
+        .p5 { width: 180px; height: 10px; background: #3e2723; bottom: 120px; z-index: 3; }
+        .p6 { width: 170px; height: 40px; background: #d7ccc8; bottom: 30px; z-index: 2; }
+        .p7 { width: 170px; height: 50px; background: #d7ccc8; bottom: 70px; z-index: 2; }
+        .p8 { width: 40px; height: 60px; background: #5d4037; bottom: 30px; z-index: 5; border: 1px solid #2e1a16; }
+        .p9 { width: 30px; height: 30px; background: #fff; border: 2px solid #5d4037; bottom: 75px; left: calc(50% - 60px); z-index: 5; }
+        .p10 { width: 30px; height: 30px; background: #fff; border: 2px solid #5d4037; bottom: 75px; right: calc(50% - 60px); z-index: 5; }
+        .p11 { width: 200px; height: 15px; background: #a52a2a; bottom: 130px; z-index: 4; border-radius: 5px; }
+        .p12 { width: 0; height: 0; border-left: 110px solid transparent; border-right: 110px solid transparent; border-bottom: 60px solid #7f0000; bottom: 145px; z-index: 4; }
+        .p13 { width: 20px; height: 40px; background: #424242; bottom: 180px; right: calc(50% - 70px); z-index: 3; }
+        .p14 { bottom: 135px; left: calc(50% - 105px); font-size: 20px; z-index: 6; }
+        .p15 { bottom: 135px; right: calc(50% - 105px); font-size: 20px; z-index: 6; }
+        .p16 { width: 100%; height: 15px; background: rgba(76, 175, 80, 0.8); bottom: 0; z-index: 0; }
+        .p17 { bottom: 20px; left: calc(50% - 140px); font-size: 24px; z-index: 1; }
+        .p18 { bottom: 20px; right: calc(50% - 140px); font-size: 24px; z-index: 1; }
+        .p19 { width: 180px; height: 5px; background: rgba(207, 216, 220, 0.8); bottom: 25px; z-index: 1; }
+        .p20 { bottom: 210px; left: calc(50% - 20px); font-size: 24px; z-index: 0; }
+
+        #feedback-bar { height: 45px; text-align: center; margin-bottom: 10px; font-weight: bold; font-size: 1.1em; line-height: 45px; border-radius: 8px; transition: 0.3s; border: 1px solid transparent;}
+        .correct-bg { background-color: rgba(232, 245, 233, 0.9); color: #2e7d32; border-color: #a5d6a7; }
+        .wrong-bg { background-color: rgba(255, 235, 238, 0.9); color: #c62828; border-color: #ef9a9a; }
+        .stats-bar { display: flex; justify-content: space-between; background: rgba(239, 235, 233, 0.8); padding: 10px 20px; border-radius: 10px; margin-bottom: 10px; font-weight: bold; }
+        .question-box { min-height: 80px; font-size: 1.2em; line-height: 1.5; margin-bottom: 20px; padding: 0 15px; border-left: 6px solid #6d4c41; color: #3e2723;}
+        .options-grid { display: grid; gap: 10px; }
+        .opt-btn { padding: 12px; border: 2px solid #d7ccc8; border-radius: 10px; background: rgba(255, 255, 255, 0.8); cursor: pointer; text-align: left; font-size: 1em; color: #333; transition: 0.2s;}
+        .opt-btn:hover:not(:disabled) { background: #fdf5e6; border-color: #ffb300; }
+        .opt-btn:disabled { opacity: 0.6; cursor: not-child; }
+        #result-screen { text-align: center; display: none; padding: 30px; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="quiz-screen">
+        <div style="text-align: center; margin-bottom: 10px;">
+            <h2 style="margin:0; color:#5d4037; text-shadow: 1px 1px 1px rgba(255,255,255,0.8);">🏛️ 《始得西山宴遊記》水墨築居挑戰</h2>
+            <p style="font-size: 0.9em; color:#8d6e63;">(累積知識，修繕民居。答對 8 題以上才能穩固房屋)</p>
+        </div>
+
+        <div id="house-display">
+            <div id="part-1" class="house-part p1"></div>
+            <div id="part-2" class="house-part p2"></div>
+            <div id="part-3" class="house-part p3"></div>
+            <div id="part-4" class="house-part p4"></div>
+            <div id="part-5" class="house-part p5"></div>
+            <div id="part-6" class="house-part p6"></div>
+            <div id="part-7" class="house-part p7"></div>
+            <div id="part-8" class="house-part p8"></div>
+            <div id="part-9" class="house-part p9"></div>
+            <div id="part-10" class="house-part p10"></div>
+            <div id="part-11" class="house-part p11"></div>
+            <div id="part-12" class="house-part p12"></div>
+            <div id="part-13" class="house-part p13"></div>
+            <div id="part-14" class="house-part p14">🏮</div>
+            <div id="part-15" class="house-part p15">🏮</div>
+            <div id="part-16" class="house-part p16"></div>
+            <div id="part-17" class="house-part p17">🌳</div>
+            <div id="part-18" class="house-part p18">🪴</div>
+            <div id="part-19" class="house-part p19"></div>
+            <div id="part-20" class="house-part p20">☁️</div>
+        </div>
+
+        <div class="stats-bar">
+            <span>題目：<span id="q-num">1</span> / 20</span>
+            <span>答對數：<span id="score">0</span></span>
+        </div>
+
+        <div id="feedback-bar">準備開始建築...</div>
+        <div id="question-text" class="question-box"></div>
+        <div id="options-container" class="options-grid"></div>
+    </div>
+
+    <div id="result-screen">
+        <div id="final-visual" style="font-size: 80px;"></div>
+        <div id="status-msg"></div>
+        <div id="advice-content" style="background:rgba(253, 242, 242, 0.9); padding:15px; border-radius:15px; margin:15px 0; display:none; border: 1px solid #ffcdd2;">
+            <p style="color:#b71c1c;"><strong>💥 房屋倒塌了！</strong></p>
+            <p>累積答對少於 8 題，結構不穩。請馬上打開書本，構建知識！</p>
+        </div>
+        <p id="score-report" style="font-size: 1.1em; color: #333;"></p>
+        <button onclick="location.reload()" style="padding:15px 40px; background:#5d4037; color:white; border:none; border-radius:25px; cursor:pointer; font-size: 1em;">重新挑戰</button>
+    </div>
+</div>
+
+<script>
+    // 材料清單（按建築順序排列）
+    const materialNames = [
+        "地基平整", "石造基座", "左側主柱", "右側主柱", "支撐橫樑", 
+        "下層牆磚", "上層牆面", "精製木門", "雕花左窗", "雕花右窗",
+        "屋簷支架", "主體屋頂", "煙囪構造", "左紅燈籠", "右紅燈籠",
+        "門前綠地", "側院大樹", "迎客盆栽", "迎賓石路", "晴空祥雲"
+    ];
+
+    const questions = [
+        { q: "文中開首提到「自余為僇人，居是州，恆惴慄」，這句話的作用是？", a: ["交代背景並與遊西山的解脫感對比", "描寫環境惡劣", "說明作者熱愛冒險", "讚美法華西亭"], correct: 0 },
+        { q: "「覺而起，起而歸」表現出作者當時怎樣的遊山心態？", a: ["行程緊湊", "對山水並無留戀，僅為排遣苦悶", "生活規律", "熱愛景色"], correct: 1 },
+        { q: "「心凝形釋，與萬化冥合」的意思是？", a: ["體力透支", "精神安定，與大自然融合為一", "內心凝重", "思想停滯"], correct: 1 },
+        { q: "文中以過去遊山「起而歸」對比遊西山「猶不欲歸」，是運用了哪種手法？", a: ["借代", "比擬", "襯托", "誇飾"], correct: 2 },
+        { q: "「不與培塿為類」中「培塿」（小土丘）象徵什麼？", a: ["隱居生活", "官場中的小人或平庸之輩", "遙遠家鄉", "永州山水"], correct: 1 },
+        { q: "「醉則更相枕而卧，卧而夢」運用了哪種修辭？", a: ["對偶", "排比", "頂真", "借代"], correct: 2 },
+        { q: "「縈青繚白」中的「青」和「白」指代山水，屬於什麼修辭？", a: ["比喻", "借代", "誇飾", "擬人"], correct: 1 },
+        { q: "文章結尾說「遊於是乎始」，這句話體現了什麼？", a: ["打算明天再來", "獲得精神解脫，是心靈遊歷的起點", "承認以前太懶", "交代寫作順序"], correct: 1 },
+        { q: "「尺寸千里，攢蹙累積」運用了什麼修辭？", a: ["誇飾", "擬人", "借代", "頂真"], correct: 0 },
+        { q: "哪一項最能體現西山的「怪特」？", a: ["奇花異草", "高聳卓絕，四周景物如蟻穴般渺小", "有怪獸出沒", "顏色隨心情改變"], correct: 1 },
+        { q: "「其隙也，則施施而行，漫漫而遊」反映了什麼？", a: ["工作忙碌", "漫無目的，消磨鬱悶時光", "急於尋找奇景", "享受退休"], correct: 1 },
+        { q: "文中「過湘江，緣染溪，砍榛莽」等連串動作用意是？", a: ["顯示西山路途艱險，突顯其幽僻", "批評政府疏於開墾", "說明求生技能", "描寫環境髒亂"], correct: 0 },
+        { q: "作者登上西山後「始指異之」，「異」字是指？", a: ["奇怪有人居住", "驚異於西山不凡的氣勢", "山形像異獸", "異議友人的話"], correct: 1 },
+        { q: "「凡數州之土壤，皆在衽席之下」旨在描寫？", a: ["土地肥沃", "想在山上睡覺", "視野極為廣闊開朗", "區域劃分狹小"], correct: 2 },
+        { q: "小山「若垤若穴」中的「垤」和「穴」是指什麼？", a: ["蟻穴與土堆", "山洞與樹根", "陷阱與地洞", "怪獸的巢穴"], correct: 0 },
+        { q: "「蒼然暮色，自遠而至」的作用是？", a: ["交代要回家了", "表現心情沈重", "渲染靜謐，過渡到物我兩忘境界", "警告山林危險"], correct: 2 },
+        { q: "柳宗元認為西山「特立」，這與他的人格有何關聯？", a: ["代表他想做官", "象徵他孤高傲岸、不隨俗的氣節", "說明他喜歡旅遊", "代表他強壯"], correct: 1 },
+        { q: "「洋洋乎與造物者遊」表達了什麼？", a: ["迷路後的感嘆", "精神獲得極大自由與超脫", "西山面積廣大", "讚美農民辛勞"], correct: 1 },
+        { q: "本文是《永州八記》的第一篇，其作用是？", a: ["交代永州氣候", "作為情感轉折點，開啟與山水感通之門", "介紹導遊是誰", "批評當地官員"], correct: 1 },
+        { q: "通觀全文，作者對西山的感情變化是？", a: ["從恐懼到遺憾", "從無感變為依戀與自我肯定", "從驚訝變為失望", "從憤怒變為平靜"], correct: 1 }
+    ];
+
+    let currentIdx = 0;
+    let score = 0;
+
+    function loadQuestion() {
+        const d = questions[currentIdx];
+        document.getElementById("q-num").innerText = currentIdx + 1;
+        document.getElementById("question-text").innerText = d.q;
+        const opts = document.getElementById("options-container");
+        opts.innerHTML = "";
+        d.a.forEach((o, i) => {
+            const b = document.createElement("button");
+            b.className = "opt-btn";
+            b.innerText = o;
+            b.onclick = () => handleAns(i);
+            opts.appendChild(b);
+        });
+    }
+
+    function handleAns(choice) {
+        const d = questions[currentIdx];
+        const fb = document.getElementById("feedback-bar");
+        const btns = document.querySelectorAll(".opt-btn");
+        btns.forEach(b => b.disabled = true);
+        
+        if(choice === d.correct) {
+            score++;
+            document.getElementById("score").innerText = score;
+            
+            // 按答對次數(score)來顯示零件，而不是按題號
+            document.getElementById("part-" + score).classList.add("show");
+            
+            fb.innerText = "✅ 答對了！建造完成：" + materialNames[score-1];
+            fb.className = "correct-bg";
+        } else {
+            fb.innerText = "❌ 可惜！這題答錯了，結構未增加。";
+            fb.className = "wrong-bg";
+        }
+
+        setTimeout(() => {
+            currentIdx++;
+            if(currentIdx < questions.length) {
+                fb.innerText = "下一題載入中...";
+                fb.className = "";
+                loadQuestion();
+            } else {
+                finish();
+            }
+        }, 1200);
+    }
+
+    function finish() {
+        document.getElementById("quiz-screen").style.display = "none";
+        const rs = document.getElementById("result-screen");
+        rs.style.display = "block";
+        
+        if(score < 8) {
+            document.getElementById("final-visual").innerText = "🏚️";
+            document.getElementById("status-msg").innerHTML = "<h2 style='color:#d32f2f; text-shadow: 1px 1px 1px rgba(255,255,255,0.8);'>房屋倒塌了！</h2>";
+            document.getElementById("advice-content").style.display = "block";
+            document.getElementById("score-report").innerText = `你僅答對 ${score} 題，地基不穩。`;
+            // 所有顯示出來的零件都觸發倒塌
+            document.querySelectorAll(".house-part").forEach(p => p.classList.add("collapse"));
+        } else {
+            document.getElementById("final-visual").innerText = (score === 20) ? "🏯" : "🏠";
+            document.getElementById("status-msg").innerHTML = `<h2 style='color:#2e7d32; text-shadow: 1px 1px 1px rgba(255,255,255,0.8);'>${(score === 20) ? "大師級築居成功！" : "修繕完成！"}</h2>`;
+            document.getElementById("score-report").innerHTML = `恭喜！你累積答對了 ${score} 題。你已成功修復民居！`;
+        }
+    }
+
+    loadQuestion();
+</script>
+</body>
+</html>
